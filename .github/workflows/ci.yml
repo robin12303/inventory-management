@@ -63,7 +63,7 @@ jobs:
                 "set -e",
                 "REGION=ap-northeast-2",
                 "REGISTRY=914875350889.dkr.ecr.ap-northeast-2.amazonaws.com",
-                "IMAGE=$REGISTRY/inventory-management:latest",
+                "IMAGE=$REGISTRY/inventory-management:${{ github.sha }}",
                 "SECRET=$(aws secretsmanager get-secret-value --secret-id inventory-management/rds-credentials --region $REGION --query SecretString --output text)",
                 "DB_USERNAME=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])[\"username\"])' \"$SECRET\")",
                 "DB_PASSWORD=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])[\"password\"])' \"$SECRET\")",
