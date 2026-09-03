@@ -51,3 +51,48 @@ jobs:
 
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      - name: Deploy to EC2 with SSM
+        run: |
+          cat > ssm-command.json <<'JSON'
+          {
+            "DocumentName": "AWS-RunShellScript",
+            "InstanceIds": ["i-00b1969a28e62522b"],
+            "Parameters": {
+              "commands": [
+                "set -e",
+                "REGION=ap-northeast-2",
+                "REGISTRY=914875350889.dkr.ecr.ap-northeast-2.amazonaws.com",
+                "IMAGE=$REGISTRY/inventory-management:latest",
+                "SECRET=$(aws secretsmanager get-secret-value --secret-id inventory-management/rds-credentials --region $REGION --query SecretString --output text)",
+                "DB_USERNAME=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])[\"username\"])' \"$SECRET\")",
+                "DB_PASSWORD=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])[\"password\"])' \"$SECRET\")",
+                "DB_HOST=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])[\"host\"])' \"$SECRET\")",
+                "DB_PORT=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])[\"port\"])' \"$SECRET\")",
+                "aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $REGISTRY",
+                "docker pull $IMAGE",
+                "docker rm -f inventory-app 2>/dev/null || true",
+                "docker run -d --name inventory-app --restart unless-stopped -p 8080:8080 -e SPRING_DATASOURCE_URL=\"jdbc:mysql://${DB_HOST}:${DB_PORT}/inventory_management\" -e SPRING_DATASOURCE_USERNAME=\"$DB_USERNAME\" -e SPRING_DATASOURCE_PASSWORD=\"$DB_PASSWORD\" $IMAGE",
+                "sleep 15",
+                "docker ps --filter name=inventory-app",
+                "curl --fail http://localhost:8080/products"
+              ]
+            }
+          }
+          JSON
+
+          COMMAND_ID=$(aws ssm send-command \
+            --region ap-northeast-2 \
+            --cli-input-json file://ssm-command.json \
+            --query "Command.CommandId" \
+            --output text)
+
+          aws ssm wait command-executed \
+            --region ap-northeast-2 \
+            --command-id "$COMMAND_ID" \
+            --instance-id "i-00b1969a28e62522b"
+
+          aws ssm get-command-invocation \
+            --region ap-northeast-2 \
+            --command-id "$COMMAND_ID" \
+            --instance-id "i-00b1969a28e62522b"
