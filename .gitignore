@@ -35,3 +35,14 @@ out/
 
 ### VS Code ###
 .vscode/
+
+  ### Local environment and secrets ###
+  .env
+  .env.*
+  *.env
+  inventory.env
+  *.pem
+  *.key
+
+  ### Deployment artifacts ###
+  *.tar
