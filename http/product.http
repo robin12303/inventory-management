@@ -1,0 +1,371 @@
+@baseUrl = http://localhost:8080
+
+
+### =========================================================
+### 1. 상품 생성
+### =========================================================
+
+POST {{baseUrl}}/products
+Content-Type: application/json
+
+{
+  "name": "햄스터 사료",
+  "sku": "HAM-TEST-001",
+  "price": 15000
+}
+
+
+### =========================================================
+### 2. 출발 창고 생성
+### =========================================================
+
+POST {{baseUrl}}/warehouses
+Content-Type: application/json
+
+{
+  "name": "용인 테스트 창고",
+  "code": "TEST-YI-001",
+  "address": "경기도 용인시"
+}
+
+
+### =========================================================
+### 3. 도착 창고 생성
+### =========================================================
+
+POST {{baseUrl}}/warehouses
+Content-Type: application/json
+
+{
+  "name": "수원 테스트 창고",
+  "code": "TEST-SW-001",
+  "address": "경기도 수원시"
+}
+
+
+### =========================================================
+### 4. 상품 전체 조회
+### 실제 productId 확인
+### =========================================================
+
+GET {{baseUrl}}/products
+
+
+### =========================================================
+### 5. 창고 전체 조회
+### 실제 warehouseId 확인
+### =========================================================
+
+GET {{baseUrl}}/warehouses
+
+
+### =========================================================
+### 아래부터 ID는 실제 생성된 값으로 수정
+###
+### 예시:
+### productId = 1
+### 용인 warehouseId = 1
+### 수원 warehouseId = 2
+### =========================================================
+
+
+### =========================================================
+### 6. 용인 창고에 100개 입고
+### =========================================================
+
+POST {{baseUrl}}/inventories/inbound
+Content-Type: application/json
+
+{
+  "warehouseId": 1,
+  "productId": 1,
+  "quantity": 100
+}
+
+
+### =========================================================
+### 7. 수원 창고에 50개 입고
+### transfer 테스트를 위해 목적지 Inventory도 미리 생성
+### =========================================================
+
+POST {{baseUrl}}/inventories/inbound
+Content-Type: application/json
+
+{
+  "warehouseId": 2,
+  "productId": 1,
+  "quantity": 50
+}
+
+
+### =========================================================
+### 8. 현재 재고 조회
+### 예상:
+### 용인 = 100
+### 수원 = 50
+### =========================================================
+
+GET {{baseUrl}}/inventories
+
+
+### =========================================================
+### 9. 용인에서 20개 출고
+### 예상:
+### 용인 100 -> 80
+### =========================================================
+
+POST {{baseUrl}}/inventories/outbound
+Content-Type: application/json
+
+{
+  "warehouseId": 1,
+  "productId": 1,
+  "quantity": 20
+}
+
+
+### =========================================================
+### 10. 출고 후 재고 조회
+### 예상:
+### 용인 = 80
+### 수원 = 50
+### =========================================================
+
+GET {{baseUrl}}/inventories
+
+
+### =========================================================
+### 11. 용인 -> 수원 30개 이동
+###
+### 예상:
+### 용인 80 -> 50
+### 수원 50 -> 80
+### =========================================================
+
+POST {{baseUrl}}/inventories/transfer
+Content-Type: application/json
+
+{
+  "fromWarehouseId": 1,
+  "toWarehouseId": 2,
+  "productId": 1,
+  "quantity": 30
+}
+
+
+### =========================================================
+### 12. 이동 후 재고 조회
+### 예상:
+### 용인 = 50
+### 수원 = 80
+### =========================================================
+
+GET {{baseUrl}}/inventories
+
+
+### =========================================================
+### 13. 재고 부족 출고 테스트
+###
+### 현재 용인 재고가 50이라면
+### 9999개 출고는 실패해야 정상
+### 예상 HTTP: 409 Conflict
+### =========================================================
+
+POST {{baseUrl}}/inventories/outbound
+Content-Type: application/json
+
+{
+  "warehouseId": 1,
+  "productId": 1,
+  "quantity": 9999
+}
+
+
+### =========================================================
+### 14. 실패 후 재고 다시 조회
+###
+### 위 요청이 rollback되어
+### 용인 재고가 그대로 50이어야 함
+### =========================================================
+
+GET {{baseUrl}}/inventories
+
+
+### =========================================================
+### 15. 잘못된 입고 수량 테스트
+###
+### @Positive 때문에 400이 나와야 정상
+### =========================================================
+
+POST {{baseUrl}}/inventories/inbound
+Content-Type: application/json
+
+{
+  "warehouseId": 1,
+  "productId": 1,
+  "quantity": -100
+}
+
+
+### =========================================================
+### 16. 존재하지 않는 상품 테스트
+###
+### 예상 HTTP: 404
+### =========================================================
+
+POST {{baseUrl}}/inventories/inbound
+Content-Type: application/json
+
+{
+  "warehouseId": 1,
+  "productId": 99999,
+  "quantity": 10
+}
+
+
+### =========================================================
+### 17. 존재하지 않는 창고 테스트
+###
+### 예상 HTTP: 404
+### =========================================================
+
+POST {{baseUrl}}/inventories/inbound
+Content-Type: application/json
+
+{
+  "warehouseId": 99999,
+  "productId": 1,
+  "quantity": 10
+}
+
+### 첫 번째 페이지, 2개
+GET http://localhost:8080/stock-histories?page=0&size=2
+
+### 두 번째 페이지, 2개
+GET http://localhost:8080/stock-histories?page=1&size=2
+
+### 1번 창고 이력만 페이징
+GET http://localhost:8080/stock-histories?warehouseId=1&page=0&size=2
+
+### 1번 상품 이력만 페이징
+GET http://localhost:8080/stock-histories?productId=1&page=0&size=2
+
+
+### 정상
+GET http://localhost:8080/stock-histories?page=0&size=20
+
+### 잘못된 page
+GET http://localhost:8080/stock-histories?page=-1&size=20
+
+### 잘못된 size
+GET http://localhost:8080/stock-histories?page=0&size=0
+
+### 최대 size 초과
+GET http://localhost:8080/stock-histories?page=0&size=101
+
+###
+GET http://localhost:8080/stock-histories?page=-1&size=20
+
+
+GET http://localhost:8080/stock-histories?page=-1&size=20
+
+### 상품 최초 생성
+POST http://localhost:8080/products
+Content-Type: application/json
+
+{
+  "name": "중복 테스트 상품",
+  "sku": "DUP-001",
+  "price": 10000
+}
+
+### 같은 SKU 다시 생성 → 409 기대
+POST http://localhost:8080/products
+Content-Type: application/json
+
+{
+  "name": "중복 테스트 상품2",
+  "sku": "DUP-001",
+  "price": 20000
+}
+
+### 창고 최초 생성
+POST http://localhost:8080/warehouses
+Content-Type: application/json
+
+{
+  "name": "중복 테스트 창고",
+  "code": "DUP-WH-001",
+  "address": "서울"
+}
+
+### 같은 창고 코드 다시 생성 → 409 기대
+POST http://localhost:8080/warehouses
+Content-Type: application/json
+
+{
+  "name": "중복 테스트 창고2",
+  "code": "DUP-WH-001",
+  "address": "부산"
+}
+###
+POST http://localhost:8080/warehouses
+Content-Type: application/json
+
+{
+"name": "또 다른 창고",
+"code": "DUP-WH-001",
+"address": "대전"
+}
+
+
+
+###
+POST {{baseUrl}}/inventories/transfer
+Content-Type: application/json
+
+{
+  "fromWarehouseId": 1,
+  "toWarehouseId": 1,
+  "productId": 1,
+  "quantity": 30
+}
+
+### 이동 테스트용 새 창고
+POST http://localhost:8080/warehouses
+Content-Type: application/json
+
+{
+  "name": "부산 이동 테스트 창고",
+  "code": "TRANSFER-BS-001",
+  "address": "부산광역시"
+}
+
+###
+GET http://localhost:8080/inventories
+
+### 기존 창고 → inventory가 없는 새 창고
+POST http://localhost:8080/inventories/transfer
+Content-Type: application/json
+
+{
+  "fromWarehouseId": 1,
+  "toWarehouseId": 6,
+  "productId": 1,
+  "quantity": 10
+}
+###
+GET http://localhost:8080/inventories
+
+
+
+###
+POST http://localhost:8080/inventories/transfer
+Content-Type: application/json
+
+{
+  "fromWarehouseId": 1,
+  "toWarehouseId": 6,
+  "productId": 1,
+  "quantity": 5
+}
