@@ -51,27 +51,3 @@ jobs:
 
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
-
-      - name: Deploy to EC2 with SSM
-        run: |
-          COMMAND_ID=$(aws ssm send-command \
-            --region ap-northeast-2 \
-            --instance-ids "i-00b1969a28e62522b" \
-            --document-name "AWS-RunShellScript" \
-            --parameters 'commands=[
-              "aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 914875350889.dkr.ecr.ap-northeast-2.amazonaws.com",
-              "docker pull 914875350889.dkr.ecr.ap-northeast-2.amazonaws.com/inventory-management:latest",
-              "docker rm -f inventory-app || true"
-            ]' \
-            --query "Command.CommandId" \
-            --output text)
-
-          aws ssm wait command-executed \
-            --region ap-northeast-2 \
-            --command-id "$COMMAND_ID" \
-            --instance-id "i-00b1969a28e62522b"
-
-          aws ssm get-command-invocation \
-            --region ap-northeast-2 \
-            --command-id "$COMMAND_ID" \
-            --instance-id "i-00b1969a28e62522b"
