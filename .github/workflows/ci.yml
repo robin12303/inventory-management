@@ -50,7 +50,7 @@ jobs:
             .
 
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
       - name: Deploy to EC2 with SSM
         run: |
@@ -75,4 +75,3 @@ jobs:
             --region ap-northeast-2 \
             --command-id "$COMMAND_ID" \
             --instance-id "i-00b1969a28e62522b"
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
