@@ -73,9 +73,8 @@ jobs:
                 "docker pull $IMAGE",
                 "docker rm -f inventory-app 2>/dev/null || true",
                 "docker run -d --name inventory-app --restart unless-stopped -p 8080:8080 -e SPRING_DATASOURCE_URL=\"jdbc:mysql://${DB_HOST}:${DB_PORT}/inventory_management\" -e SPRING_DATASOURCE_USERNAME=\"$DB_USERNAME\" -e SPRING_DATASOURCE_PASSWORD=\"$DB_PASSWORD\" $IMAGE",
-                "sleep 15",
                 "docker ps --filter name=inventory-app",
-                "curl --fail http://localhost:8080/products"
+                "for i in $(seq 1 12); do if curl --fail --silent http://localhost:8080/actuator/health; then exit 0; fi; echo Waiting for application...; sleep 5; done; docker logs --tail 100 inventory-app; exit 1"
               ]
             }
           }
