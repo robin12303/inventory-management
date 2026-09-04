@@ -35,6 +35,8 @@ dependencies {
 
     testImplementation 'org.testcontainers:testcontainers-junit-jupiter:2.0.5'
     testImplementation 'org.testcontainers:testcontainers-mysql:2.0.5'
+
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 }
 
 tasks.named('test') {
