@@ -1,6 +1,8 @@
 package com.portfolio.wms.warehouse.service;
 
+import com.portfolio.wms.common.exception.WarehouseInUseException;
 import com.portfolio.wms.common.exception.WarehouseNotFoundException;
+import com.portfolio.wms.inventory.repository.InventoryRepository;
 import com.portfolio.wms.warehouse.domain.Warehouse;
 import com.portfolio.wms.warehouse.dto.WarehouseCreateRequest;
 import com.portfolio.wms.warehouse.dto.WarehouseResponse;
@@ -16,7 +18,7 @@ import java.util.List;
 public class WarehouseService {
 
     private final WarehouseRepository warehouseRepository;
-
+    private final InventoryRepository inventoryRepository;
     public WarehouseResponse createWarehouse(
             WarehouseCreateRequest request
     ) {
@@ -65,6 +67,10 @@ public class WarehouseService {
     public void deleteWarehouse(Long id) {
         Warehouse warehouse = warehouseRepository.findById(id)
                 .orElseThrow(() -> new WarehouseNotFoundException(id));
+
+        if (inventoryRepository.existsByWarehouseId(id)) {
+            throw new WarehouseInUseException(id);
+        }
 
         warehouseRepository.delete(warehouse);
     }

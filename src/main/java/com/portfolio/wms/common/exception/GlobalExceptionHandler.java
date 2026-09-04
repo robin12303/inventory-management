@@ -93,7 +93,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT)
                 .body(new ApiErrorResponse(
                         "DATA_INTEGRITY_CONFLICT",
-                        "이미 존재하는 값입니다."
+                        "데이터 무결성 제약조건에 위배되었습니다."
                 ));
     }
 
@@ -105,6 +105,18 @@ public class GlobalExceptionHandler {
                 .badRequest()
                 .body(new ApiErrorResponse(
                         "INVALID_TRANSFER",
+                        e.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(WarehouseInUseException.class)
+    public ResponseEntity<ApiErrorResponse> handleWarehouseInUse(
+            WarehouseInUseException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ApiErrorResponse(
+                        "WAREHOUSE_IN_USE",
                         e.getMessage()
                 ));
     }
