@@ -12,7 +12,9 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addMapping("/**")
                 .allowedOrigins(
                         "http://localhost:5173",
-                        "https://d2r8bbx63uhohg.cloudfront.net"
+                        "https://d2r8bbx63uhohg.cloudfront.net",
+                        "https://ofd.co.kr",
+                        "https://www.ofd.co.kr"
                 )
                 .allowedMethods(
                         "GET",
